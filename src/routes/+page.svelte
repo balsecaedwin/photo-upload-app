@@ -2,23 +2,75 @@
 	// @ts-nocheck
 
 	/**
-	 * Chunk size: 500 kilobytes.
+	 * Chunk size: 200 kilobytes.
 	 */
-	const chunkSize = 500 * 1024;
+	const chunkSize = 200 * 1024;
 
 	let image;
+	let imageName;
 
 	async function handleCapture(event) {
-		image = event.target.files[0];
+		image = await compressImage(event.target.files[0], 0.7);
+		imageName = event.target.files[0].name;
 	}
+
+	function compressImage(file, maxSizeMB) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const img = new Image();
+        img.src = reader.result;
+
+        img.onload = async () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          let width = img.width;
+          let height = img.height;
+
+          const scaleImage = Math.sqrt((maxSizeMB * 1024 * 1024) / file.size);
+
+          if (scaleImage < 1) {
+            width *= scaleImage;
+            height *= scaleImage;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          try {
+            const blob = await canvasToBlob(canvas, file.type, 0.5);
+
+            resolve(blob);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        img.onerror = (error) => reject(error);
+      };
+
+      reader.onerror = (error) => reject(error);
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+	function canvasToBlob(canvas, type, quality) {
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), type, quality);
+    });
+  }
 
 	function chunkImage(image, chunkSize) {
 		return new Promise((resolve, reject) => {
 			const chunks = [];
+			let offset = 0;
 
 			const reader = new FileReader();
-
-			let offset = 0;
 
 			reader.onload = (event) => {
 				const buffer = Array.from(new Uint8Array(event.target.result));
@@ -63,15 +115,16 @@
 		console.time('Chunks upload time');
 
 		const uploadPromises = chunks.map((chunk, index) => {
-			return fetch('http://localhost:3000/api/v1/fuel-loads/upload-file', {
+			return fetch('http://localhost:3000/api/v1/fuel-loads/upload-file/chunk', {
 					method: 'POST',
+					priority: 'high',
 					headers: {
 						'Content-Type': 'application/json',
 						'Authorization': 'Basic YWRtaW46YWRtaW4='
 					},
 					body: JSON.stringify({
 						"chunk": chunk,
-						"filename": image.name,
+						"filename": imageName,
 						"chunkIndex": index,
 					}),
 			}).then(response => {
@@ -93,7 +146,7 @@
 
 		console.timeEnd('Chunks upload time');
 
-		const response = await fetch('http://localhost:3000/api/v1/fuel-loads', {
+		const response = await fetch('http://localhost:3000/api/v1/fuel-loads/upload-file', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -102,7 +155,7 @@
 			body: JSON.stringify({
 				"files": [
 					{
-							"filename": image.name,
+							"filename": imageName,
 							"totalChunks": chunks.length
 					}
 				]
