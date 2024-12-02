@@ -125,7 +125,7 @@
 		const startTime = Date.now();
 
 		const uploadPromises = chunks.map((chunk, index) => {
-			return fetch('http://localhost:3000/api/v1/fuel-loads/upload-file/chunk', {
+			return fetch('https://eu1.staging-pulpomatic.com/api/v1/fuel-loads/upload-file/chunk', {
 					method: 'POST',
 					priority: 'high',
 					headers: {
@@ -156,7 +156,7 @@
 
 		chunksUploadTime = Date.now() - startTime;
 
-		void fetch('http://localhost:3000/api/v1/fuel-loads/upload-file', {
+		void fetch('https://eu1.staging-pulpomatic.com/api/v1/fuel-loads/upload-file', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
