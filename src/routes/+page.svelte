@@ -9,9 +9,18 @@
 	let image;
 	let imageName;
 
+	let uploadStatus = 'Pending';
+
+	let chunksUploadTime;
+	let totalUploadTime;
+
 	async function handleCapture(event) {
 		image = await compressImage(event.target.files[0], 0.7);
 		imageName = event.target.files[0].name;
+
+		uploadStatus = 'Pending';
+		chunksUploadTime = null;
+		totalUploadTime = null;
 	}
 
 	function compressImage(file, maxSizeMB) {
@@ -106,13 +115,14 @@
 			return;
 		}
 
+		uploadStatus = 'In progress';
+
 		const chunks = await chunkImage(
 			image,
 			chunkSize,
 		);
 
-		console.time('Total request time');
-		console.time('Chunks upload time');
+		const startTime = Date.now();
 
 		const uploadPromises = chunks.map((chunk, index) => {
 			return fetch('http://localhost:3000/api/v1/fuel-loads/upload-file/chunk', {
@@ -144,7 +154,7 @@
 			console.error('Error uploading chunks:', error);
 		}
 
-		console.timeEnd('Chunks upload time');
+		chunksUploadTime = Date.now() - startTime;
 
 		const response = await fetch('http://localhost:3000/api/v1/fuel-loads/upload-file', {
 			method: 'POST',
@@ -166,19 +176,38 @@
 			console.error(`Error processing chunks:`, response.statusText);
 		}
 
-		console.timeEnd('Total request time');
+		totalUploadTime = Date.now() - startTime;
+
+		uploadStatus = 'Finished';
 }
 </script>
 
 <main>
 	<h1>Take a Photo</h1>
-	<input type="file" accept="image/*" capture="camera" on:change={handleCapture} />
-	<button on:click={uploadImage}>Upload Photo</button>
+	<div id="data">
+		<input type="file" accept="image/*" capture="camera" on:change={handleCapture} />
+		<br>
+		<button on:click={uploadImage}>Upload</button>
+	</div>
+	<div id="info">
+			<h3>Upload status: {uploadStatus}.</h3>
+			<h3>{chunksUploadTime ? `Chunks upload time: ${(chunksUploadTime / 1000).toFixed(2)} seg.` : ''}</h3>
+			<h3>{totalUploadTime ? `Total upload time: ${(totalUploadTime / 1000).toFixed(2)} seg.` : ''}</h3>
+	</div>
 </main>
 
 <style>
 	main {
 		text-align: center;
 		padding: 1em;
+	}
+	button {
+		margin-top: 20px;
+	}
+	h3 {
+		margin-top: 10px;
+	}
+	#info {
+		margin-top: 30px;
 	}
 </style>
