@@ -147,7 +147,7 @@
 		});
 
 		try {
-			await Promise.all(uploadPromises);
+			void Promise.all(uploadPromises);
 
 			console.log('All chunks uploaded successfully.');
 		} catch (error) {
@@ -156,7 +156,7 @@
 
 		chunksUploadTime = Date.now() - startTime;
 
-		const response = await fetch('http://localhost:3000/api/v1/fuel-loads/upload-file', {
+		void fetch('http://localhost:3000/api/v1/fuel-loads/upload-file', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -170,11 +170,11 @@
 					}
 				]
 			}),
-		});
-
-		if (!response.ok) {
-			console.error(`Error processing chunks:`, response.statusText);
-		}
+		}).then(response => {
+				if (!response.ok) {
+					console.error(`Error processing chunks:`, response.statusText);
+				}
+			});
 
 		totalUploadTime = Date.now() - startTime;
 
