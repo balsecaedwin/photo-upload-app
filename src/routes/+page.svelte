@@ -191,8 +191,8 @@
 	</div>
 	<div id="info">
 			<h3>Upload status: {uploadStatus}.</h3>
-			<h3>{chunksUploadTime ? `Chunks upload time: ${(chunksUploadTime / 1000).toFixed(2)} seg.` : ''}</h3>
-			<h3>{totalUploadTime ? `Total upload time: ${(totalUploadTime / 1000).toFixed(2)} seg.` : ''}</h3>
+			<h3>{chunksUploadTime ? `Chunks upload time: ${chunksUploadTime} ms.` : ''}</h3>
+			<h3>{totalUploadTime ? `Total upload time: ${totalUploadTime} ms.` : ''}</h3>
 	</div>
 </main>
 
